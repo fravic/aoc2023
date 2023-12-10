@@ -1,3 +1,6 @@
+// Approach: Walk the loop and keep track of which tiles are on the "left-hand"
+// vs "right-hand" side of the loop. Count up tiles by handedness and the lower
+// count is probably the answer.
 import * as fs from "fs";
 
 const file = fs.readFileSync("./p10/input.txt", "utf8");
