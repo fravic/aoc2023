@@ -1,21 +1,49 @@
 import * as fs from "fs";
-import { findIndex, repeat, sum, uniq } from "lodash";
+import { sum } from "lodash";
 
 const file = fs.readFileSync("./p12/input.txt", "utf8");
 const lines = file.split("\n");
 
+const REPEATS = 1;
+
 const counts = lines.map((l) => {
-  const groupMap = l.split(" ")[0];
-  const groups = l.split(" ")[1];
+  const _groupMap = l.split(" ")[0];
+  const _groups = l.split(" ")[1];
+
+  const groupMap = Array(REPEATS)
+    .fill(null)
+    .map((_) => _groupMap)
+    .join("?");
+  const groups = Array(REPEATS)
+    .fill(null)
+    .map((_) => _groups)
+    .join(",");
 
   // Is this fast enough?
-  function mapContains(char: string, startIdx: number, endIdx: number) {
-    for (let i = startIdx; i < endIdx; i++) {
-      if (groupMap[i] === char) {
-        return true;
-      }
-    }
-    return false;
+  const cumulativePeriodCounts: { [idx: number]: number } = {
+    [-1]: 0,
+  };
+  for (let i = 0; i < groupMap.length; i++) {
+    cumulativePeriodCounts[i] =
+      cumulativePeriodCounts[i - 1] + (groupMap[i] === "." ? 1 : 0);
+  }
+  function mapContainsPeriod(startIdx: number, endIdx: number) {
+    return (
+      cumulativePeriodCounts[endIdx - 1] > cumulativePeriodCounts[startIdx - 1]
+    );
+  }
+
+  const cumulativeHashCounts: { [idx: number]: number } = {
+    [-1]: 0,
+  };
+  for (let i = 0; i < groupMap.length; i++) {
+    cumulativeHashCounts[i] =
+      cumulativeHashCounts[i - 1] + (groupMap[i] === "#" ? 1 : 0);
+  }
+  function mapContainsHash(startIdx: number, endIdx: number) {
+    return (
+      cumulativeHashCounts[endIdx - 1] > cumulativeHashCounts[startIdx - 1]
+    );
   }
 
   let nextGroupPossibilities: Array<number> = [0];
@@ -23,7 +51,7 @@ const counts = lines.map((l) => {
   for (const gIdx in split) {
     const g = split[gIdx];
     const gNum = Number(g);
-    const collectForNextGroup = [];
+    const newPossibilities = [];
     for (const p of nextGroupPossibilities) {
       // Add new possibilities
       let newStartIdx = p;
@@ -32,9 +60,10 @@ const counts = lines.map((l) => {
         if (groupMap[newStartIdx - 1] === "#") {
           // No; need to start after a space. This is a dead end because there's
           // an extra group behind us.
+          newStartIdx++;
           break;
         }
-        if (mapContains(".", newStartIdx, newStartIdx + gNum)) {
+        if (mapContainsPeriod(newStartIdx, newStartIdx + gNum)) {
           // No; there are known non-matches
           newStartIdx++;
           continue;
@@ -50,14 +79,18 @@ const counts = lines.map((l) => {
           groupMap[newStartIdx + gNum] === "."
         ) {
           // Yes!
-          collectForNextGroup.push(newStartIdx + gNum + 1);
+          newPossibilities.push(newStartIdx + gNum + 1);
         }
         newStartIdx++;
       }
     }
-    nextGroupPossibilities = collectForNextGroup;
+    nextGroupPossibilities = newPossibilities;
   }
-  return nextGroupPossibilities.length;
+
+  // Pare out any possibilities that have extra groups after all groups have already matched
+  return nextGroupPossibilities.filter(
+    (p) => !mapContainsHash(p, groupMap.length)
+  ).length;
 });
 
 console.log("Sum: " + sum(counts));
