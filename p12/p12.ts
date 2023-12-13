@@ -4,7 +4,7 @@ import { sum } from "lodash";
 const file = fs.readFileSync("./p12/input.txt", "utf8");
 const lines = file.split("\n");
 
-const REPEATS = 1;
+const REPEATS = 5;
 
 const counts = lines.map((l) => {
   const _groupMap = l.split(" ")[0];
@@ -46,15 +46,16 @@ const counts = lines.map((l) => {
     );
   }
 
-  let nextGroupPossibilities: Array<number> = [0];
+  let nextGroupPossibilities: { [idx: number]: number } = { 0: 1 };
   const split = groups.split(",");
   for (const gIdx in split) {
     const g = split[gIdx];
     const gNum = Number(g);
-    const newPossibilities = [];
-    for (const p of nextGroupPossibilities) {
+    const newPossibilities: { [idx: number]: number } = {};
+    for (const entry of Object.entries(nextGroupPossibilities)) {
       // Add new possibilities
-      let newStartIdx = p;
+      const [p, base] = entry;
+      let newStartIdx = Number(p);
       while (newStartIdx <= groupMap.length - gNum) {
         // Can we slot in at this start idx?
         if (groupMap[newStartIdx - 1] === "#") {
@@ -79,7 +80,8 @@ const counts = lines.map((l) => {
           groupMap[newStartIdx + gNum] === "."
         ) {
           // Yes!
-          newPossibilities.push(newStartIdx + gNum + 1);
+          newPossibilities[newStartIdx + gNum + 1] =
+            (newPossibilities[newStartIdx + gNum + 1] ?? 0) + base;
         }
         newStartIdx++;
       }
@@ -88,9 +90,9 @@ const counts = lines.map((l) => {
   }
 
   // Pare out any possibilities that have extra groups after all groups have already matched
-  return nextGroupPossibilities.filter(
-    (p) => !mapContainsHash(p, groupMap.length)
-  ).length;
+  return Object.entries(nextGroupPossibilities)
+    .filter(([p, count]) => !mapContainsHash(Number(p), groupMap.length))
+    .reduce((soFar, [p, count]) => soFar + count, 0);
 });
 
 console.log("Sum: " + sum(counts));
