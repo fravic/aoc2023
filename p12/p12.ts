@@ -5,15 +5,25 @@ const file = fs.readFileSync("./p12/input.txt", "utf8");
 const lines = file.split("\n");
 
 const counts = lines.map((l) => {
-  console.log("--- input:", l);
   const groupMap = l.split(" ")[0];
   const groups = l.split(" ")[1];
 
-  let possibilityCount = 0;
-  let nextGroupPossibilities: Array<number> = [];
+  // Is this fast enough?
+  function mapContains(char: string, startIdx: number, endIdx: number) {
+    for (let i = startIdx; i < endIdx; i++) {
+      if (groupMap[i] === char) {
+        return true;
+      }
+    }
+    return false;
+  }
 
-  for (const g of groups.split(",")) {
+  let nextGroupPossibilities: Array<number> = [0];
+  const split = groups.split(",");
+  for (const gIdx in split) {
+    const g = split[gIdx];
     const gNum = Number(g);
+    const collectForNextGroup = [];
     for (const p of nextGroupPossibilities) {
       // Add new possibilities
       let newStartIdx = p;
@@ -22,10 +32,9 @@ const counts = lines.map((l) => {
         if (groupMap[newStartIdx - 1] === "#") {
           // No; need to start after a space. This is a dead end because there's
           // an extra group behind us.
-          newStartIdx++;
           break;
         }
-        if (groupMap.slice(newStartIdx, newStartIdx + gNum).indexOf(".") >= 0) {
+        if (mapContains(".", newStartIdx, newStartIdx + gNum)) {
           // No; there are known non-matches
           newStartIdx++;
           continue;
@@ -35,30 +44,20 @@ const counts = lines.map((l) => {
           newStartIdx++;
           continue;
         }
-        if (newStartIdx + gNum === groupMap.length) {
-          // Exact fit at the end!
-          nextGroupPossibilities.push(newStartIdx + gNum + 1);
-        } else if (
+        if (
+          newStartIdx + gNum === groupMap.length ||
           groupMap[newStartIdx + gNum] === "?" ||
           groupMap[newStartIdx + gNum] === "."
         ) {
           // Yes!
-          nextGroupPossibilities.push(newStartIdx + gNum + 1);
-
-          // Is this the definitive spot?
-          if (
-            p.filled.slice(newStartIdx, newStartIdx + gNum) ===
-            repeat("#", gNum)
-          ) {
-            // We MUST slot in here
-            break;
-          }
+          collectForNextGroup.push(newStartIdx + gNum + 1);
         }
         newStartIdx++;
       }
     }
+    nextGroupPossibilities = collectForNextGroup;
   }
-  return possibilityCount;
+  return nextGroupPossibilities.length;
 });
 
 console.log("Sum: " + sum(counts));
