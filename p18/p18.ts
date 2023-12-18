@@ -65,24 +65,46 @@ for (const y of yCoords) {
 
 for (const y of yCoords) {
   for (let x = minX; x <= maxX; x++) {
-    process.stdout.write(grid[y].has(x) ? "#" : ".");
+    if (x === 0 && y === 0) {
+      process.stdout.write("!");
+    } else {
+      process.stdout.write(grid[y].has(x) ? "#" : ".");
+    }
   }
   process.stdout.write("\n");
 
-  const xCoords = Array.from(grid[y]).sort((a, b) => a - b);
+  // Add the walls
+  sum += grid[y].size;
+}
 
-  let lastInBoundsX = null;
-  for (const x of xCoords) {
-    sum += 1;
+function has(x: number, y: number) {
+  return grid[y]?.has(x) ?? false;
+}
 
-    if (lastInBoundsX !== null) {
-      // Fill the gap between the last x we saw and this one
-      sum += x - lastInBoundsX;
-      lastInBoundsX = null;
-    } else if (!grid[y].has(x + 1)) {
-      // Do we need to fill in the next x coord?
-      lastInBoundsX = x + 1;
-    }
+const toStr = (x: number, y: number) => `${x}.${y}`;
+const visited = new Set(toStr(0, 0));
+
+const START_BFS = { x: 1, y: 0 };
+const queue: Array<{ x: number; y: number }> = [START_BFS];
+while (queue.length) {
+  const { x, y } = queue.shift()!;
+  if (visited.has(toStr(x, y))) {
+    continue;
+  }
+  sum++;
+  visited.add(toStr(x, y));
+  if (!has(x + 1, y)) {
+    queue.push({ x: x + 1, y });
+  }
+  if (!has(x - 1, y)) {
+    queue.push({ x: x - 1, y });
+  }
+  if (!has(x, y + 1)) {
+    queue.push({ x, y: y + 1 });
+  }
+  if (!has(x, y - 1)) {
+    queue.push({ x, y: y - 1 });
   }
 }
+
 console.log("Sum: ", sum);
