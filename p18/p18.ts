@@ -1,5 +1,4 @@
 import * as fs from "fs";
-import { chunk, repeat } from "lodash";
 
 const file = fs.readFileSync("./p18/input.txt", "utf8");
 const instructions = file.split("\n");
